@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import Anthropic from "@anthropic-ai/sdk";
 import { execSync } from "child_process";
 import fs from "fs";
@@ -260,6 +261,44 @@ Rules:
 - Do NOT delete tests unless the feature genuinely doesn't exist
 - Do NOT add waits or timeouts to paper over race conditions — fix the root cause
 - Explain what was wrong and what you changed`,
+
+  bug: `You are a senior QA engineer writing a bug report.
+
+The full project source code is provided in the first message, along with a description of the bug.
+
+Your process:
+1. Read the source code to understand how the feature works
+2. Identify the likely root cause in the code
+3. Write a clear, professional GitHub issue in this exact format:
+
+## Description
+A clear summary of the bug in 1-2 sentences.
+
+## Steps to Reproduce
+1. Step one
+2. Step two
+3. Step three
+
+## Expected Behavior
+What should happen.
+
+## Actual Behavior
+What happens instead.
+
+## Root Cause Analysis
+Where in the code the bug likely originates. Reference specific files and line numbers.
+
+## Suggested Fix
+A brief description of how to fix it, with code snippets if helpful.
+
+## Severity
+One of: Critical / High / Medium / Low
+
+Rules:
+- Be specific — reference exact files, functions, and line numbers
+- Steps to reproduce should be detailed enough for anyone to follow
+- Root cause analysis should point to actual code, not guesses
+- Keep the tone professional and objective`,
 };
 
 // --- Human-readable tool logging ---
@@ -438,7 +477,7 @@ if (mode === "review") {
   const genFiles = args.files || genConfig.files || null;
 
   if (!feature) {
-    console.log('Usage: node generate-tests.js generate "feature description" [project-path]');
+    console.log('Usage: node qa-agent.js generate "feature description" [project-path]');
     process.exit(1);
   }
 
@@ -454,7 +493,7 @@ if (mode === "review") {
   const testFile = args.positional[0];
 
   if (!testFile) {
-    console.log('Usage: node generate-tests.js fix "tests/my-test.spec.ts" [project-path]');
+    console.log('Usage: node qa-agent.js fix "tests/my-test.spec.ts" [project-path]');
     process.exit(1);
   }
 
@@ -482,12 +521,37 @@ if (mode === "review") {
     { model: fixConfig.model || "claude-sonnet-4-6", files: args.files || fixConfig.files },
   );
 
+} else if (mode === "bug") {
+  const description = args.positional[0];
+  const project = args.positional[1] || "/Users/annapearson/playwright-test-suite";
+  const bugConfig = loadConfig(project);
+  const bugFiles = args.files || bugConfig.files || null;
+
+  if (!description) {
+    console.log('Usage: node qa-agent.js bug "description of the bug" [project-path]');
+    process.exit(1);
+  }
+
+  console.log(`\nAnalyzing bug: "${description}"\n`);
+  runAgent(
+    SYSTEM_PROMPTS.bug,
+    `I found a bug: ${description}\n\nAnalyze the source code provided below, identify the root cause, and write a professional GitHub issue.`,
+    project,
+    { model: bugConfig.model || "claude-sonnet-4-6", files: bugFiles },
+  ).then((issueText) => {
+    const date = new Date().toISOString().slice(0, 10);
+    const reportPath = path.join(project, `bug-report-${date}.md`);
+    fs.writeFileSync(reportPath, issueText);
+    console.log(`\n📄 Bug report saved to: ${reportPath}\n`);
+  });
+
 } else {
-  console.log("QA Agent — generates, reviews, and fixes Playwright tests\n");
+  console.log("QA Agent — generates, reviews, fixes tests, and files bug reports\n");
   console.log("Commands:");
-  console.log('  node generate-tests.js generate "feature description" [project-path]');
-  console.log("  node generate-tests.js review [project-path]");
-  console.log('  node generate-tests.js fix "tests/my-test.spec.ts" [project-path]');
+  console.log('  node qa-agent.js generate "feature description" [project-path]');
+  console.log("  node qa-agent.js review [project-path]");
+  console.log('  node qa-agent.js fix "tests/my-test.spec.ts" [project-path]');
+  console.log('  node qa-agent.js bug "bug description" [project-path]');
   console.log("\nOptions:");
   console.log("  --files app/app.js,app/index.html   Only include these files in the snapshot");
   console.log("\nConfig: add a .qa-agent.json to your project:");

@@ -33,7 +33,7 @@ The agent uses a tool-use loop: Claude is given tools (`read_file`, `write_file`
 Describe a feature in plain English, and the agent writes a full Playwright test suite for it. It reads your source code, writes tests, runs them, and fixes any failures automatically.
 
 ```bash
-node generate-tests.js generate "search and genre filtering" /path/to/project
+node qa-agent.js generate "search and genre filtering" /path/to/project
 ```
 
 ### `review` — Audit existing tests
@@ -41,7 +41,7 @@ node generate-tests.js generate "search and genre filtering" /path/to/project
 Analyzes your test suite against your source code and produces a detailed report covering test quality, coverage gaps, flaky patterns, and best practice violations. Saves the report as a markdown file.
 
 ```bash
-node generate-tests.js review /path/to/project
+node qa-agent.js review /path/to/project
 ```
 
 ### `fix` — Repair failing tests
@@ -49,7 +49,15 @@ node generate-tests.js review /path/to/project
 Point it at a failing test file. It runs the tests, captures the errors, and sends them to Claude to diagnose and fix. Repeats until tests pass.
 
 ```bash
-node generate-tests.js fix tests/my-feature.spec.ts /path/to/project
+node qa-agent.js fix tests/my-feature.spec.ts /path/to/project
+```
+
+### `bug` — File a bug report
+
+Describe a bug in plain English. The agent reads your source code, identifies the likely root cause, and writes a formatted GitHub issue with steps to reproduce, expected vs. actual behavior, and a suggested fix.
+
+```bash
+node qa-agent.js bug "clicking next track while paused starts playing automatically" /path/to/project
 ```
 
 ## Setup
@@ -62,7 +70,7 @@ npm install
 export ANTHROPIC_API_KEY="sk-ant-..."
 
 # Run it
-node generate-tests.js review /path/to/your/project
+node qa-agent.js review /path/to/your/project
 ```
 
 ## Config file
@@ -88,8 +96,12 @@ Add a `.qa-agent.json` to any project to customize behavior:
 You can also override files per-run:
 
 ```bash
-node generate-tests.js review --files app/app.js,tests/player.spec.ts
+node qa-agent.js review --files app/app.js,tests/player.spec.ts
 ```
+
+## Example output
+
+See [examples/review-output.md](examples/review-output.md) for a real review generated against a [DJ Mix Player test suite](https://github.com/anna-pearson/playwright-test-suite).
 
 ## Performance optimizations
 

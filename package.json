@@ -2,8 +2,13 @@
   "name": "qa-agent",
   "version": "1.0.0",
   "type": "module",
+  "bin": {
+    "qa-agent": "./qa-agent.js"
+  },
   "scripts": {
-    "generate": "node generate-tests.js"
+    "review": "node qa-agent.js review",
+    "generate": "node qa-agent.js generate",
+    "fix": "node qa-agent.js fix"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.52.0"
