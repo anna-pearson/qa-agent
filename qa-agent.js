@@ -452,7 +452,7 @@ const args = parseArgs();
 const mode = args.mode;
 
 // Resolve project path: CLI arg > config default > hardcoded fallback
-const projectPath = args.positional[0] || "/Users/annapearson/playwright-test-suite";
+const projectPath = args.positional[0] || ".";
 const config = loadConfig(projectPath);
 const files = args.files || config.files || null;
 
@@ -472,7 +472,7 @@ if (mode === "review") {
 
 } else if (mode === "generate") {
   const feature = args.positional[0];
-  const project = args.positional[1] || "/Users/annapearson/playwright-test-suite";
+  const project = args.positional[1] || ".";
   const genConfig = loadConfig(project);
   const genFiles = args.files || genConfig.files || null;
 
@@ -497,7 +497,7 @@ if (mode === "review") {
     process.exit(1);
   }
 
-  const project = args.positional[1] || "/Users/annapearson/playwright-test-suite";
+  const project = args.positional[1] || ".";
   const fixConfig = loadConfig(project);
 
   // Run the failing tests first to capture the error output
@@ -523,7 +523,7 @@ if (mode === "review") {
 
 } else if (mode === "bug") {
   const description = args.positional[0];
-  const project = args.positional[1] || "/Users/annapearson/playwright-test-suite";
+  const project = args.positional[1] || ".";
   const bugConfig = loadConfig(project);
   const bugFiles = args.files || bugConfig.files || null;
 

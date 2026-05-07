@@ -103,14 +103,6 @@ node qa-agent.js review --files app/app.js,tests/player.spec.ts
 
 See [examples/review-output.md](examples/review-output.md) for a real review generated against a [DJ Mix Player test suite](https://github.com/anna-pearson/playwright-test-suite).
 
-## Performance optimizations
-
-- **Project snapshots** — Source code is read upfront and included in the first message, eliminating 3-5 tool calls of exploration
-- **Streaming** — Responses stream to the terminal word-by-word instead of waiting for the full response
-- **Targeted files** — Config or `--files` flag limits the snapshot to relevant files, reducing token usage
-- **Model selection** — Review mode uses Haiku (faster, cheaper) since it only reads and analyzes
-- **Rate limit retry** — Automatic retry with backoff when hitting API rate limits
-
 ## Architecture
 
 Built with the [Anthropic SDK](https://docs.anthropic.com/en/docs/sdks) using the Messages API with tool use. The core is a `while(true)` agent loop:
