@@ -60,17 +60,24 @@ Describe a bug in plain English. The agent reads your source code, identifies th
 node qa-agent.js bug "clicking next track while paused starts playing automatically" /path/to/project
 ```
 
-## Setup
+## Quick start
 
 ```bash
-# Install dependencies
-npm install
-
-# Set your API key
+# Set your API key (get one at console.anthropic.com)
 export ANTHROPIC_API_KEY="sk-ant-..."
 
-# Run it
-node qa-agent.js review /path/to/your/project
+# Run it in any project directory
+npx playwright-qa-agent review
+npx playwright-qa-agent generate "search filtering"
+npx playwright-qa-agent fix tests/my-test.spec.ts
+npx playwright-qa-agent bug "volume resets when switching tracks"
+```
+
+Or install globally:
+
+```bash
+npm install -g playwright-qa-agent
+playwright-qa-agent review
 ```
 
 ## Config file

@@ -1,15 +1,28 @@
 {
-  "name": "qa-agent",
+  "name": "playwright-qa-agent",
   "version": "1.0.0",
+  "description": "CLI tool that uses Claude AI to generate, review, fix, and report bugs in Playwright tests",
   "type": "module",
   "bin": {
-    "qa-agent": "./qa-agent.js"
+    "playwright-qa-agent": "./qa-agent.js"
   },
-  "scripts": {
-    "review": "node qa-agent.js review",
-    "generate": "node qa-agent.js generate",
-    "fix": "node qa-agent.js fix"
+  "files": [
+    "qa-agent.js"
+  ],
+  "keywords": [
+    "playwright",
+    "testing",
+    "qa",
+    "ai",
+    "claude",
+    "test-generation",
+    "code-review"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/anna-pearson/qa-agent"
   },
+  "license": "MIT",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.52.0"
   }
