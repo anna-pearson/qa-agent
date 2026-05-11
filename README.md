@@ -60,6 +60,14 @@ Describe a bug in plain English. The agent reads your source code, identifies th
 node qa-agent.js bug "clicking next track while paused starts playing automatically" /path/to/project
 ```
 
+### `flaky` — Find and diagnose flaky tests
+
+Runs your entire test suite N times (default 5), tracks which tests pass and fail inconsistently, then sends the flaky ones to Claude for root cause analysis.
+
+```bash
+node qa-agent.js flaky 10 /path/to/project
+```
+
 ## Quick start
 
 ```bash
@@ -71,6 +79,7 @@ npx playwright-qa-agent review
 npx playwright-qa-agent generate "search filtering"
 npx playwright-qa-agent fix tests/my-test.spec.ts
 npx playwright-qa-agent bug "volume resets when switching tracks"
+npx playwright-qa-agent flaky 10
 ```
 
 Or install globally:

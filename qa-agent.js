@@ -299,6 +299,42 @@ Rules:
 - Steps to reproduce should be detailed enough for anyone to follow
 - Root cause analysis should point to actual code, not guesses
 - Keep the tone professional and objective`,
+
+  flaky: `You are a senior QA engineer who diagnoses flaky tests.
+
+You are given:
+- The full project source code and test files
+- A flakiness report showing which tests passed/failed inconsistently across multiple runs
+
+Your process:
+1. For each flaky test, read the test code and the source code it's testing
+2. Diagnose WHY it's flaky — identify the root cause
+3. Suggest a concrete fix
+
+Common causes of flakiness:
+- Race conditions: assertion runs before the UI updates
+- Timing: animations, transitions, or debounce timers not accounted for
+- Shared state: tests depend on each other's side effects
+- Non-deterministic data: dates, random values, order-dependent results
+- Network: real API calls that sometimes fail or slow down
+- Selectors: matching elements that appear/disappear during rendering
+
+Format your response as:
+
+## Flaky Test Report
+
+For each flaky test:
+
+### [test name]
+- **Pass rate:** X/N runs
+- **Root cause:** What's causing the inconsistency
+- **Evidence:** The specific line(s) in the test and/or source code
+- **Fix:** Exactly what to change, with code
+
+Rules:
+- Be specific — reference exact files, functions, and line numbers
+- Don't suggest adding arbitrary waits/sleeps — find the real cause
+- If a test is flaky due to a genuine app bug (not a test issue), say so`,
 };
 
 // --- Human-readable tool logging ---
@@ -545,13 +581,105 @@ if (mode === "review") {
     console.log(`\n📄 Bug report saved to: ${reportPath}\n`);
   });
 
+} else if (mode === "flaky") {
+  const runs = parseInt(args.positional[0]) || 5;
+  const project = args.positional[1] || ".";
+  const flakyConfig = loadConfig(project);
+  const flakyFiles = args.files || flakyConfig.files || null;
+
+  console.log(`\nRunning tests ${runs} times to detect flakiness...\n`);
+
+  // Track results per test: { "test name": { passed: 0, failed: 0, errors: [] } }
+  const results = {};
+
+  for (let i = 1; i <= runs; i++) {
+    console.log(`Run ${i}/${runs}...`);
+    let output;
+    try {
+      output = execSync(`npx playwright test --reporter=json 2>&1`, {
+        cwd: project, timeout: 180000, encoding: "utf-8",
+      });
+    } catch (err) {
+      output = err.stdout || err.stderr || "";
+    }
+
+    // Parse the JSON reporter output
+    try {
+      const report = JSON.parse(output);
+      for (const suite of report.suites || []) {
+        for (const spec of suite.specs || []) {
+          const name = `${suite.title} > ${spec.title}`;
+          if (!results[name]) results[name] = { passed: 0, failed: 0, errors: [] };
+          const ok = spec.ok;
+          if (ok) {
+            results[name].passed++;
+          } else {
+            results[name].failed++;
+            // Grab first error message if available
+            const firstResult = spec.tests?.[0]?.results?.[0];
+            if (firstResult?.error?.message) {
+              results[name].errors.push(firstResult.error.message.slice(0, 200));
+            }
+          }
+        }
+      }
+    } catch {
+      console.log(`   Warning: couldn't parse results for run ${i}`);
+    }
+  }
+
+  // Find flaky tests (passed sometimes AND failed sometimes)
+  const flaky = Object.entries(results).filter(
+    ([, r]) => r.passed > 0 && r.failed > 0
+  );
+  const alwaysFail = Object.entries(results).filter(
+    ([, r]) => r.passed === 0 && r.failed > 0
+  );
+
+  console.log(`\n--- Results across ${runs} runs ---`);
+  console.log(`Total tests tracked: ${Object.keys(results).length}`);
+  console.log(`Flaky (sometimes pass, sometimes fail): ${flaky.length}`);
+  console.log(`Always failing: ${alwaysFail.length}`);
+  console.log(`Stable: ${Object.keys(results).length - flaky.length - alwaysFail.length}\n`);
+
+  if (flaky.length === 0) {
+    console.log("No flaky tests detected! Your test suite is stable.");
+    process.exit(0);
+  }
+
+  // Build a summary for Claude
+  const flakyReport = flaky.map(([name, r]) => {
+    const lines = [`- **${name}**: passed ${r.passed}/${runs}, failed ${r.failed}/${runs}`];
+    if (r.errors.length > 0) {
+      lines.push(`  Error sample: ${r.errors[0]}`);
+    }
+    return lines.join("\n");
+  }).join("\n");
+
+  console.log("Flaky tests found:\n");
+  console.log(flakyReport);
+  console.log("\nSending to Claude for diagnosis...\n");
+
+  runAgent(
+    SYSTEM_PROMPTS.flaky,
+    `I ran my test suite ${runs} times and found these flaky tests:\n\n${flakyReport}\n\nDiagnose why each test is flaky and suggest fixes.`,
+    project,
+    { model: flakyConfig.model || "claude-sonnet-4-6", files: flakyFiles },
+  ).then((report) => {
+    const date = new Date().toISOString().slice(0, 10);
+    const reportPath = path.join(project, `flaky-report-${date}.md`);
+    fs.writeFileSync(reportPath, report);
+    console.log(`\n📄 Flaky test report saved to: ${reportPath}\n`);
+  });
+
 } else {
-  console.log("QA Agent — generates, reviews, fixes tests, and files bug reports\n");
+  console.log("QA Agent — generates, reviews, fixes tests, finds flaky tests, and files bug reports\n");
   console.log("Commands:");
   console.log('  node qa-agent.js generate "feature description" [project-path]');
   console.log("  node qa-agent.js review [project-path]");
   console.log('  node qa-agent.js fix "tests/my-test.spec.ts" [project-path]');
   console.log('  node qa-agent.js bug "bug description" [project-path]');
+  console.log("  node qa-agent.js flaky [runs] [project-path]    (default: 5 runs)");
   console.log("\nOptions:");
   console.log("  --files app/app.js,app/index.html   Only include these files in the snapshot");
   console.log("\nConfig: add a .qa-agent.json to your project:");
