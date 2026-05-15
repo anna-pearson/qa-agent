@@ -406,6 +406,11 @@ async function callAPIStreaming(params) {
         const waitSec = 30 * (attempt + 1);
         console.log(`\n⏳ Rate limited — waiting ${waitSec}s before retry...\n`);
         await new Promise((r) => setTimeout(r, waitSec * 1000));
+      } else if (err.status === 413) {
+        const msgChars = JSON.stringify(params.messages).length;
+        console.error(`\n❌ Request too large (${Math.round(msgChars / 4)} estimated tokens).`);
+        console.error(`   Try adding a .qa-agent.json with a "files" list to reduce the snapshot.\n`);
+        process.exit(1);
       } else {
         throw err;
       }
@@ -420,6 +425,8 @@ async function runAgent(systemPrompt, userMessage, projectPath, { model = "claud
   // Include a snapshot — targeted if files specified, full otherwise
   const snapshot = snapshotProject(projectPath, files);
   const fullMessage = `${userMessage}\n\nHere is the full project source code:\n${snapshot}`;
+  console.log(`Snapshot: ${files ? files.length + ' files' : 'full project'} (~${Math.round(fullMessage.length / 4)} tokens)`);
+  console.log(`Model: ${model}\n`);
   const messages = [{ role: "user", content: fullMessage }];
   const allText = []; // collect all text blocks for saving later
 

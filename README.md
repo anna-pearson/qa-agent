@@ -117,7 +117,12 @@ node qa-agent.js review --files app/app.js,tests/player.spec.ts
 
 ## Example output
 
-See [examples/review-output.md](examples/review-output.md) for a real review generated against a [DJ Mix Player test suite](https://github.com/anna-pearson/playwright-test-suite).
+See [examples/review-output.md](examples/review-output.md) for a real review generated against a [DJ Mix Player test suite](https://github.com/anna-pearson/playwright-test-suite). In a single run, the agent:
+
+- Found **4 critical test bugs** (vacuous assertions, race conditions, weak verification)
+- Identified **10 coverage gaps** (untested features, missing edge cases)
+- Caught accessibility tests that checked visibility but not semantic roles
+- Flagged a test that passed by coincidence due to timing
 
 ## Architecture
 
